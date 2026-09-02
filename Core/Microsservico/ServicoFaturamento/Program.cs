@@ -34,9 +34,10 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader()
               .AllowAnyMethod()));
 
-// ── Controllers + OpenAPI ──────────────────────────────────────────────────
+// ── Controllers + Swagger ──────────────────────────────────────────────────
 builder.Services.AddControllers();
-builder.Services.AddOpenApi();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 // ── Banco de Dados — Faturamento ───────────────────────────────────────────
 builder.Services.AddDbContext<FaturamentoDbContext>(options =>
@@ -69,8 +70,12 @@ using (var scope = app.Services.CreateScope())
 }
 
 // ── Pipeline ───────────────────────────────────────────────────────────────
-if (app.Environment.IsDevelopment())
-    app.MapOpenApi();
+app.UseSwagger();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Serviço de Faturamento API v1");
+    c.RoutePrefix = "swagger";
+});
 
 app.UseCors("AllowFrontend");
 app.UseAuthorization();
