@@ -1,0 +1,198 @@
+<div class="flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="text-2xl font-bold m-0">Nota Fiscal #{{ numero | number: '3.0-0' }}</h1>
+    <p class="text-gray-500 mt-1">Detalhes e itens da nota</p>
+  </div>
+  <p-button
+    label="Voltar"
+    icon="pi pi-arrow-left"
+    severity="secondary"
+    routerLink="/faturamento"
+  ></p-button>
+</div>
+
+@if (erroConexao()) {
+  <div class="text-center p-5 surface-card border-round shadow-2 border-1 border-red-200">
+    <i class="pi pi-exclamation-circle text-red-500" style="font-size: 3rem"></i>
+    <h3 class="text-red-600 mt-3 mb-1">Serviço de Faturamento Inacessível (Porta 5002)</h3>
+    <p class="text-gray-600 mb-2">Não foi possível carregar os dados da Nota Fiscal #{{ numero }}. Verifique se o microsserviço de Faturamento está em execução.</p>
+    <p class="text-xs text-gray-500 font-mono mb-4">Comando: cd Core/Microsservico/ServicoFaturamento && dotnet run</p>
+    <p-button label="Tentar Novamente" icon="pi pi-refresh" severity="danger" (onClick)="carregarDados()"></p-button>
+  </div>
+}
+
+@if (carregando()) {
+  <div class="text-center p-4 text-gray-500">
+    <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
+    <p class="mt-2">Carregando dados...</p>
+  </div>
+}
+
+@if (nota() && !carregando()) {
+  <!-- Status e Ações Gerais -->
+  <p-card styleClass="mb-4 shadow-2">
+    <div class="flex justify-content-between align-items-center flex-wrap gap-3">
+      <div class="flex align-items-center gap-2">
+        <strong class="text-gray-700">Status: </strong>
+        <p-tag [value]="nota()!.status" [severity]="getStatusSeverity(nota()!.status)"></p-tag>
+      </div>
+
+      @if (nota()!.status === 'Aberta') {
+        <p-button
+          label="Imprimir / Fechar Nota"
+          icon="pi pi-print"
+          severity="danger"
+          (onClick)="confirmarFechamento()"
+          [disabled]="fechando() || nota()!.itens.length === 0"
+          [loading]="fechando()"
+        >
+        </p-button>
+      }
+    </div>
+
+    @if (nota()!.status === 'Aberta' && nota()!.itens.length === 0) {
+      <p-message severity="warn" styleClass="mt-3 block"
+        >Adicione pelo menos um item antes de fechar a nota.</p-message
+      >
+    }
+  </p-card>
+
+  <!-- Área de Inclusão de Item -->
+  @if (nota()!.status === 'Aberta') {
+    <p-card styleClass="mb-4 shadow-2" header="Adicionar Item">
+      <form [formGroup]="formItem" (ngSubmit)="adicionarItem()" class="flex flex-column gap-4">
+        <!-- Linha 1: Produto, Quantidade, Itens na Nota, Botão Adicionar -->
+        <div class="flex gap-3 align-items-end flex-wrap">
+          <!-- Produto -->
+          <div class="flex flex-column gap-1 flex-grow-1" style="min-width: 250px">
+            <label class="font-semibold text-gray-700"
+              >Produto <span class="text-red-500">*</span></label
+            >
+            <select
+              formControlName="codigoProduto"
+              class="w-full px-3 border-1 border-round outline-none transition-colors text-base text-gray-800"
+              [class.border-red-400]="isInvalid('codigoProduto')"
+              [class.border-gray-300]="!isInvalid('codigoProduto')"
+              style="height: 44px; box-sizing: border-box; background-color: #ffffff"
+            >
+              <option value="" disabled selected>Selecione um produto...</option>
+              @for (prod of produtosDisponiveis(); track prod.codigo) {
+                <option [value]="prod.codigo" [disabled]="prod.saldo <= 0">
+                  {{ prod.descricao }}
+                </option>
+              }
+            </select>
+            @if (isInvalid('codigoProduto')) {
+              <small class="text-red-500">{{
+                formItem.get('codigoProduto')?.errors | formError
+              }}</small>
+            }
+          </div>
+
+          <!-- Quantidade -->
+          <div class="flex flex-column gap-1" style="width: 170px">
+            <label class="font-semibold text-gray-700"
+              >Quantidade <span class="text-red-500">*</span></label
+            >
+            <p-inputnumber
+              formControlName="quantidade"
+              [min]="0.001"
+              [max]="produtoSelecionado()?.saldo ?? 999999"
+              [minFractionDigits]="0"
+              [maxFractionDigits]="3"
+              locale="pt-BR"
+              styleClass="w-full"
+              inputStyleClass="w-full text-base"
+              [inputStyle]="{ height: '44px', 'box-sizing': 'border-box' }"
+              [class.ng-invalid]="isInvalid('quantidade')"
+              [class.ng-dirty]="isInvalid('quantidade')"
+            >
+            </p-inputnumber>
+            @if (isInvalid('quantidade')) {
+              <small class="text-red-500">{{
+                formItem.get('quantidade')?.errors | formError
+              }}</small>
+            }
+          </div>
+
+          <!-- Itens na Nota (somente leitura) -->
+          <div class="flex flex-column gap-1" style="width: 140px">
+            <label class="font-semibold text-gray-700">Itens na Nota</label>
+            <div
+              class="w-full surface-50 border-1 border-gray-200 border-round text-center font-bold text-primary flex align-items-center justify-content-center text-lg"
+              style="height: 44px; box-sizing: border-box"
+            >
+              {{ nota()!.itens.length }}
+            </div>
+          </div>
+
+          <!-- Botão -->
+          <div class="flex flex-column gap-1">
+            <p-button
+              type="submit"
+              label="Adicionar"
+              icon="pi pi-plus"
+              [style]="{ height: '44px', 'box-sizing': 'border-box' }"
+              [disabled]="formItem.invalid || adicionando()"
+              [loading]="adicionando()"
+            >
+            </p-button>
+          </div>
+        </div>
+
+        <!-- Linha 2: Descrição e Saldo Disponível -->
+        <div class="flex gap-3 flex-wrap">
+          <!-- Descrição (readonly, auto-preenchido) -->
+          <div class="flex flex-column gap-1 flex-grow-1" style="min-width: 250px">
+            <label class="font-semibold text-gray-700">Descrição</label>
+            <div
+              class="w-full px-3 surface-50 text-gray-600 border-1 border-gray-200 border-round flex align-items-center text-base"
+              style="height: 44px; box-sizing: border-box"
+              [class.font-italic]="!produtoSelecionado()"
+            >
+              {{ produtoSelecionado()?.descricao || 'Preenchido ao selecionar um produto...' }}
+            </div>
+          </div>
+
+          <!-- Saldo Disponível (readonly, auto-preenchido) -->
+          <div class="flex flex-column gap-1" style="width: 180px">
+            <label class="font-semibold text-gray-700">Saldo Disponível</label>
+            <div
+              class="w-full px-3 surface-50 border-1 border-gray-200 border-round text-center font-bold flex align-items-center justify-content-center text-lg"
+              style="height: 44px; box-sizing: border-box"
+              [class.text-green-600]="(produtoSelecionado()?.saldo ?? 0) > 0"
+              [class.text-red-500]="(produtoSelecionado()?.saldo ?? 0) <= 0"
+              [class.text-gray-400]="!produtoSelecionado()"
+            >
+              {{ produtoSelecionado() ? (produtoSelecionado()!.saldo | number: '1.0-3') : '—' }}
+            </div>
+          </div>
+        </div>
+      </form>
+    </p-card>
+  }
+
+  <!-- Lista de Itens -->
+  <p-card header="Itens da Nota" styleClass="shadow-2">
+    @if (nota()!.itens.length === 0) {
+      <div class="text-center p-4 text-gray-500">Nenhum item adicionado a esta nota ainda.</div>
+    } @else {
+      <p-table [value]="nota()!.itens" responsiveLayout="scroll" styleClass="p-datatable-sm">
+        <ng-template #header>
+          <tr>
+            <th>Código</th>
+            <th>Descrição</th>
+            <th class="text-right">Quantidade</th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-item>
+          <tr>
+            <td class="font-bold font-mono">{{ item.codigoProduto }}</td>
+            <td>{{ item.descricaoProduto }}</td>
+            <td class="text-right font-bold">{{ item.quantidade | number: '1.0-3' }}</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    }
+  </p-card>
+}

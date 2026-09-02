@@ -1,0 +1,191 @@
+<div class="flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="text-2xl font-bold m-0">Nova Nota Fiscal</h1>
+    <p class="text-gray-500 mt-1">Adicione os produtos e clique em Salvar para concluir</p>
+  </div>
+  <p-button
+    label="Cancelar"
+    icon="pi pi-arrow-left"
+    severity="secondary"
+    routerLink="/faturamento">
+  </p-button>
+</div>
+
+@if (erroConexao()) {
+  <div class="text-center p-5 surface-card border-round shadow-2 border-1 border-red-200">
+    <i class="pi pi-exclamation-circle text-red-500" style="font-size: 3rem"></i>
+    <h3 class="text-red-600 mt-3 mb-1">Serviço de Estoque Inacessível (Porta 5001)</h3>
+    <p class="text-gray-600 mb-2">Para consultar o saldo e selecionar produtos, o microsserviço de Estoque precisa estar em execução.</p>
+    <p class="text-xs text-gray-500 font-mono mb-4">Comando: cd Core/Microsservico/ServicoEstoque && dotnet run</p>
+    <p-button
+      label="Tentar Novamente"
+      icon="pi pi-refresh"
+      severity="danger"
+      (onClick)="carregarProdutos()">
+    </p-button>
+  </div>
+}
+
+@if (carregando()) {
+  <div class="text-center p-4 text-gray-500">
+    <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
+    <p class="mt-2">Carregando produtos disponíveis...</p>
+  </div>
+}
+
+@if (!carregando() && !erroConexao()) {
+  <div class="flex flex-column gap-2">
+    <!-- Formulário para adicionar produto -->
+    <p-card styleClass="shadow-2" header="Adicionar Produto">
+      <form [formGroup]="form" (ngSubmit)="adicionarItem()" class="flex flex-column gap-4">
+        
+        <!-- Linha 1: Produto, Quantidade, Itens na Nota, Botão Adicionar -->
+        <div class="flex gap-3 align-items-end flex-wrap">
+          
+          <!-- Seleção de Produto -->
+          <div class="flex flex-column gap-1 flex-grow-1" style="min-width: 250px;">
+            <label class="font-semibold text-gray-700">Produto <span class="text-red-500">*</span></label>
+            <select
+              formControlName="codigoProduto"
+              class="w-full px-3 border-1 border-round outline-none transition-colors text-base text-gray-800"
+              [class.border-red-400]="isInvalid('codigoProduto')"
+              [class.border-gray-300]="!isInvalid('codigoProduto')"
+              style="height: 44px; box-sizing: border-box; background-color: #ffffff;">
+              <option value="" disabled selected>Selecione um produto...</option>
+              @for (prod of produtosDisponiveis(); track prod.codigo) {
+                <option [value]="prod.codigo">
+                  {{ prod.descricao }}
+                </option>
+              }
+            </select>
+            @if (isInvalid('codigoProduto')) {
+              <small class="text-red-500">{{ form.get('codigoProduto')?.errors | formError }}</small>
+            }
+          </div>
+
+          <!-- Quantidade -->
+          <div class="flex flex-column gap-1" style="width: 170px;">
+            <label class="font-semibold text-gray-700">Quantidade <span class="text-red-500">*</span></label>
+            <p-inputnumber
+              formControlName="quantidade"
+              [min]="0.001"
+              [max]="produtoSelecionado()?.saldo ?? 999999"
+              [minFractionDigits]="0"
+              [maxFractionDigits]="3"
+              locale="pt-BR"
+              styleClass="w-full"
+              inputStyleClass="w-full text-base"
+              [inputStyle]="{ height: '44px', 'box-sizing': 'border-box' }"
+              [class.ng-invalid]="isInvalid('quantidade')"
+              [class.ng-dirty]="isInvalid('quantidade')">
+            </p-inputnumber>
+            @if (isInvalid('quantidade')) {
+              <small class="text-red-500">{{ form.get('quantidade')?.errors | formError }}</small>
+            }
+          </div>
+
+          <!-- Itens na Nota (somente leitura) -->
+          <div class="flex flex-column gap-1" style="width: 140px;">
+            <label class="font-semibold text-gray-700">Itens na Nota</label>
+            <div class="w-full surface-50 border-1 border-gray-200 border-round text-center font-bold text-primary flex align-items-center justify-content-center text-lg"
+                 style="height: 44px; box-sizing: border-box;">
+              {{ itensDaNota().length }}
+            </div>
+          </div>
+
+          <!-- Botão Adicionar -->
+          <div class="flex flex-column gap-1">
+            <p-button
+              type="submit"
+              label="Adicionar"
+              icon="pi pi-plus"
+              [style]="{ height: '44px', 'box-sizing': 'border-box' }"
+              [disabled]="form.invalid">
+            </p-button>
+          </div>
+        </div>
+
+        <!-- Linha 2: Descrição e Saldo Disponível -->
+        <div class="flex gap-3 flex-wrap">
+          
+          <!-- Descrição (readonly, auto-preenchido) -->
+          <div class="flex flex-column gap-1 flex-grow-1" style="min-width: 250px;">
+            <label class="font-semibold text-gray-700">Descrição</label>
+            <div class="w-full px-3 surface-50 text-gray-600 border-1 border-gray-200 border-round flex align-items-center text-base"
+                 style="height: 44px; box-sizing: border-box;"
+                 [class.font-italic]="!produtoSelecionado()">
+              {{ produtoSelecionado()?.descricao || 'Preenchido ao selecionar um produto...' }}
+            </div>
+          </div>
+
+          <!-- Saldo Disponível (readonly, auto-preenchido) -->
+          <div class="flex flex-column gap-1" style="width: 180px;">
+            <label class="font-semibold text-gray-700">Saldo Disponível</label>
+            <div class="w-full px-3 surface-50 border-1 border-gray-200 border-round text-center font-bold flex align-items-center justify-content-center text-lg"
+                 style="height: 44px; box-sizing: border-box;"
+                 [class.text-green-600]="(produtoSelecionado()?.saldo ?? 0) > 0"
+                 [class.text-red-500]="(produtoSelecionado()?.saldo ?? 0) <= 0"
+                 [class.text-gray-400]="!produtoSelecionado()">
+              {{ produtoSelecionado() ? (produtoSelecionado()!.saldo | number: '1.0-3') : '—' }}
+            </div>
+          </div>
+        </div>
+      </form>
+    </p-card>
+
+    <!-- Lista de Itens da Nota -->
+    <p-card styleClass="mt-4 shadow-2" header="Itens da Nota">
+      @if (itensDaNota().length === 0) {
+        <div class="text-center p-6 text-gray-400">
+          <i class="pi pi-file-plus" style="font-size: 3rem; opacity: 0.3"></i>
+          <p class="mt-3 text-lg">Nenhum produto adicionado ainda.</p>
+          <p class="text-sm">Use o formulário acima para incluir itens na nota.</p>
+        </div>
+      } @else {
+        <p-table [value]="itensDaNota()" styleClass="p-datatable-sm">
+          <ng-template #header>
+            <tr>
+              <th>Código</th>
+              <th>Descrição</th>
+              <th class="text-right" style="width: 200px">Quantidade</th>
+              <th class="text-right" style="width: 120px">Ações</th>
+            </tr>
+          </ng-template>
+          <ng-template #body let-item>
+            <tr>
+              <td class="font-bold font-mono">{{ item.codigoProduto }}</td>
+              <td>{{ item.descricaoProduto }}</td>
+              <td class="text-right">
+                <span class="font-semibold text-base">{{ item.quantidade | number: '1.0-3' }}</span>
+              </td>
+              <td class="text-right">
+                <p-button
+                  icon="pi pi-trash"
+                  severity="danger"
+                  size="small"
+                  (onClick)="removerItem(item.codigoProduto)"
+                  pTooltip="Remover item">
+                </p-button>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+
+        <!-- Rodapé com Salvar -->
+        <div class="flex justify-content-between align-items-center mt-4 pt-3 border-top-1 border-gray-200">
+          <span class="text-gray-600">
+            <strong>{{ itensDaNota().length }}</strong>
+            {{ itensDaNota().length === 1 ? 'item' : 'itens' }} na nota
+          </span>
+          <p-button
+            label="Salvar Nota Fiscal"
+            icon="pi pi-save"
+            [loading]="salvando()"
+            [disabled]="!podeSalvar()"
+            (onClick)="salvarNota()">
+          </p-button>
+        </div>
+      }
+    </p-card>
+  </div>
+}

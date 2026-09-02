@@ -1,0 +1,67 @@
+<div class="flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="text-2xl font-bold m-0">Faturamento</h1>
+    <p class="text-gray-500 mt-1">Gestão de notas fiscais e histórico de faturamento</p>
+  </div>
+  <div class="flex gap-2">
+    <p-button label="Atualizar" icon="pi pi-refresh" severity="secondary" [loading]="carregando()" (onClick)="carregarNotas()"></p-button>
+    <p-button label="Criar Nova Nota" icon="pi pi-plus" routerLink="/faturamento/criar"></p-button>
+  </div>
+</div>
+
+@if (erroConexao()) {
+  <div class="p-4 bg-red-50 border-round border-1 border-red-200 text-red-700 mb-4 flex justify-content-between align-items-center flex-wrap gap-3">
+    <div class="flex align-items-center gap-3">
+      <i class="pi pi-exclamation-triangle text-red-500 text-2xl"></i>
+      <div>
+        <strong class="block text-base">Serviço de Faturamento inacessível (Porta 5002)</strong>
+        <span class="text-sm">Não foi possível conectar ao microsserviço de Faturamento. Execute: <code>cd Core/Microsservico/ServicoFaturamento && dotnet run</code></span>
+      </div>
+    </div>
+    <p-button label="Tentar Novamente" icon="pi pi-refresh" severity="danger" size="small" (onClick)="carregarNotas()"></p-button>
+  </div>
+}
+
+<p-card styleClass="shadow-2">
+  @if (carregando()) {
+    <div class="text-center p-5 text-gray-500">
+      <i class="pi pi-spin pi-spinner" style="font-size: 2.5rem"></i>
+      <p class="mt-3 text-base">Carregando notas fiscais...</p>
+    </div>
+  } @else if (notas().length === 0 && !erroConexao()) {
+    <div class="text-center p-5 text-gray-500">
+      <i class="pi pi-file text-gray-300 text-5xl mb-3"></i>
+      <h3 class="text-xl font-semibold mb-2">Nenhuma nota fiscal encontrada</h3>
+      <p class="mb-4">Crie uma nova nota fiscal para iniciar o processo de emissão.</p>
+      <p-button label="Criar Nova Nota" icon="pi pi-plus" routerLink="/faturamento/criar"></p-button>
+    </div>
+  } @else if (notas().length > 0) {
+    <p-table [value]="notas()" [paginator]="true" [rows]="10" responsiveLayout="scroll" styleClass="p-datatable-sm">
+      <ng-template #header>
+        <tr>
+          <th>Número da Nota</th>
+          <th>Status</th>
+          <th>Qtd. Itens</th>
+          <th class="text-right">Ação</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-nota>
+        <tr>
+          <td class="font-bold font-mono">#{{ nota.numero | number:'3.0' }}</td>
+          <td>
+            <p-tag [value]="nota.status" [severity]="getStatusSeverity(nota.status)"></p-tag>
+          </td>
+          <td>{{ nota.itens.length }} {{ nota.itens.length === 1 ? 'item' : 'itens' }}</td>
+          <td class="text-right">
+            <p-button
+              [label]="nota.status === 'Aberta' ? 'Editar / Adicionar Itens' : 'Visualizar'"
+              size="small"
+              severity="secondary"
+              [routerLink]="['/faturamento', nota.numero]">
+            </p-button>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  }
+</p-card>

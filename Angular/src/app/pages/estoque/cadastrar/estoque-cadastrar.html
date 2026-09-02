@@ -1,0 +1,91 @@
+<div class="flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="text-2xl font-bold m-0">Cadastrar Produto</h1>
+    <p class="text-gray-500 mt-1">Adicione um novo item ao controle de estoque</p>
+  </div>
+  <p-button label="Voltar" icon="pi pi-arrow-left" severity="secondary" routerLink="/estoque"></p-button>
+</div>
+
+<div class="flex justify-content-center">
+  <div class="w-full" style="max-width: 680px;">
+    <p-card styleClass="shadow-2">
+      <form [formGroup]="form" (ngSubmit)="salvar()" class="flex flex-column gap-4">
+
+        <!-- Código -->
+        <div class="flex flex-column gap-1">
+          <label for="codigo" class="font-semibold text-gray-700">
+            Código do Produto <span class="text-red-500">*</span>
+          </label>
+          <input
+            pInputText
+            id="codigo"
+            formControlName="codigo"
+            placeholder="Ex: P001"
+            autofocus
+            class="w-full text-base"
+            style="height: 44px; box-sizing: border-box;"
+            [class.ng-invalid]="isInvalid('codigo')"
+            [class.ng-dirty]="isInvalid('codigo')" />
+          @if (isInvalid('codigo')) {
+            <small class="text-red-500">{{ form.get('codigo')?.errors | formError }}</small>
+          }
+        </div>
+
+        <!-- Descrição -->
+        <div class="flex flex-column gap-1">
+          <label for="descricao" class="font-semibold text-gray-700">
+            Descrição <span class="text-red-500">*</span>
+          </label>
+          <input
+            pInputText
+            id="descricao"
+            formControlName="descricao"
+            placeholder="Nome completo do produto"
+            class="w-full text-base"
+            style="height: 44px; box-sizing: border-box;"
+            [class.ng-invalid]="isInvalid('descricao')"
+            [class.ng-dirty]="isInvalid('descricao')" />
+          @if (isInvalid('descricao')) {
+            <small class="text-red-500">{{ form.get('descricao')?.errors | formError }}</small>
+          }
+        </div>
+
+        <!-- Saldo Inicial -->
+        <div class="flex flex-column gap-1">
+          <label for="saldoInicial" class="font-semibold text-gray-700">
+            Saldo Inicial <span class="text-red-500">*</span>
+          </label>
+          <p-inputnumber
+            id="saldoInicial"
+            formControlName="saldoInicial"
+            [min]="0"
+            [minFractionDigits]="0"
+            [maxFractionDigits]="3"
+            locale="pt-BR"
+            styleClass="w-full"
+            inputStyleClass="w-full text-base"
+            [inputStyle]="{ height: '44px', 'box-sizing': 'border-box' }"
+            [class.ng-invalid]="isInvalid('saldoInicial')"
+            [class.ng-dirty]="isInvalid('saldoInicial')">
+          </p-inputnumber>
+          @if (isInvalid('saldoInicial')) {
+            <small class="text-red-500">{{ form.get('saldoInicial')?.errors | formError }}</small>
+          }
+        </div>
+
+        <!-- Ações -->
+        <div class="flex justify-content-end gap-2 mt-2 pt-3 border-top-1 border-gray-200">
+          <p-button label="Cancelar" severity="secondary" [text]="true" routerLink="/estoque"></p-button>
+          <p-button
+            type="submit"
+            [label]="salvando ? 'Salvando...' : 'Salvar Produto'"
+            icon="pi pi-save"
+            [disabled]="form.invalid || salvando"
+            [loading]="salvando">
+          </p-button>
+        </div>
+
+      </form>
+    </p-card>
+  </div>
+</div>

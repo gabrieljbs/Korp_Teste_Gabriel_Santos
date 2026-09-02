@@ -1,0 +1,46 @@
+<div class="sidebar-container">
+  <!-- Logo/Brand -->
+  <div class="brand-section">
+    <div class="brand-text">
+      <div class="brand-title">Sistema de Emissão de Notas</div>
+    </div>
+  </div>
+
+  <!-- Navegação -->
+  <nav class="nav-menu">
+    <!-- Seção: Visão Geral -->
+    <div class="nav-section-title">Visão Geral</div>
+    <a
+      routerLink="/"
+      [routerLinkActiveOptions]="{ exact: true }"
+      routerLinkActive="active"
+      class="nav-item"
+    >
+      <i class="pi pi-home nav-icon"></i>
+      <span class="nav-label">Dashboard</span>
+    </a>
+
+    <!-- Seção: Estoque -->
+    <div class="nav-section-title">Estoque</div>
+    <a
+      routerLink="/estoque"
+      [routerLinkActiveOptions]="{ exact: true }"
+      routerLinkActive="active"
+      class="nav-item"
+    >
+      <i class="pi pi-box nav-icon"></i>
+      <span class="nav-label">Listar Produtos</span>
+    </a>
+    <a routerLink="/estoque/cadastrar" routerLinkActive="active" class="nav-item">
+      <i class="pi pi-plus-circle nav-icon"></i>
+      <span class="nav-label">Cadastrar Produto</span>
+    </a>
+
+    <!-- Seção: Faturamento -->
+    <div class="nav-section-title">Faturamento</div>
+    <a routerLink="/faturamento" routerLinkActive="active" class="nav-item">
+      <i class="pi pi-file-edit nav-icon"></i>
+      <span class="nav-label">Notas Fiscais</span>
+    </a>
+  </nav>
+</div>

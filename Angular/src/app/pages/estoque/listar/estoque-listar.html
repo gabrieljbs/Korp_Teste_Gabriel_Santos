@@ -1,0 +1,65 @@
+<div class="flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="text-2xl font-bold m-0">Estoque de Produtos</h1>
+    <p class="text-gray-500 mt-1">Gerencie o saldo e os itens cadastrados no inventário</p>
+  </div>
+  <div class="flex gap-2">
+    <p-button label="Atualizar" icon="pi pi-refresh" severity="secondary" [loading]="carregando()" (onClick)="carregarProdutos()"></p-button>
+    <p-button label="Cadastrar Produto" icon="pi pi-plus" routerLink="/estoque/cadastrar"></p-button>
+  </div>
+</div>
+
+@if (erroConexao()) {
+  <div class="p-4 bg-red-50 border-round border-1 border-red-200 text-red-700 mb-4 flex justify-content-between align-items-center flex-wrap gap-3">
+    <div class="flex align-items-center gap-3">
+      <i class="pi pi-exclamation-triangle text-red-500 text-2xl"></i>
+      <div>
+        <strong class="block text-base">Serviço de Estoque inacessível (Porta 5001)</strong>
+        <span class="text-sm">Não foi possível conectar ao microsserviço de Estoque. Execute: <code>cd Core/Microsservico/ServicoEstoque && dotnet run</code></span>
+      </div>
+    </div>
+    <p-button label="Tentar Novamente" icon="pi pi-refresh" severity="danger" size="small" (onClick)="carregarProdutos()"></p-button>
+  </div>
+}
+
+<p-card styleClass="shadow-2">
+  @if (carregando()) {
+    <div class="text-center p-5 text-gray-500">
+      <i class="pi pi-spin pi-spinner" style="font-size: 2.5rem"></i>
+      <p class="mt-3 text-base">Carregando produtos do estoque...</p>
+    </div>
+  } @else if (produtos().length === 0 && !erroConexao()) {
+    <div class="text-center p-5 text-gray-500">
+      <i class="pi pi-box text-gray-300 text-5xl mb-3"></i>
+      <h3 class="text-xl font-semibold mb-2">Nenhum produto cadastrado</h3>
+      <p class="mb-4">Cadastre o primeiro produto para iniciar o controle de estoque.</p>
+      <p-button label="Cadastrar Produto" icon="pi pi-plus" routerLink="/estoque/cadastrar"></p-button>
+    </div>
+  } @else if (produtos().length > 0) {
+    <p-table [value]="produtos()" [paginator]="true" [rows]="10" responsiveLayout="scroll" styleClass="p-datatable-sm">
+      <ng-template #header>
+        <tr>
+          <th pSortableColumn="codigo">Código <p-sorticon field="codigo" /></th>
+          <th pSortableColumn="descricao">Descrição <p-sorticon field="descricao" /></th>
+          <th class="text-right" pSortableColumn="saldo">Saldo Disponível <p-sorticon field="saldo" /></th>
+          <th class="text-center">Status</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-produto>
+        <tr>
+          <td class="font-bold font-mono">{{ produto.codigo }}</td>
+          <td>{{ produto.descricao }}</td>
+          <td class="text-right font-bold" [class.text-red-500]="produto.saldo <= 0" [class.text-green-600]="produto.saldo > 0">
+            {{ produto.saldo | number:'1.0-3' }}
+          </td>
+          <td class="text-center">
+            <p-tag
+              [value]="getSaldoLabel(produto.saldo)"
+              [severity]="getSaldoSeverity(produto.saldo)">
+            </p-tag>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  }
+</p-card>
