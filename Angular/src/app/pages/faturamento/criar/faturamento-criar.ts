@@ -71,7 +71,7 @@ export class FaturamentoCriarComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.carregarProdutos();
 
-    // Auto-preenche descricao e saldoDisponivel quando o produto muda
+    // Auto-preenche descricao e saldoDisponivel quando o produto muda e atualiza o limite de quantidade
     this.form.controls.codigoProduto.valueChanges
       .pipe(takeUntil(this.destroy$))
       .subscribe(codigo => {
@@ -81,6 +81,20 @@ export class FaturamentoCriarComponent implements OnInit, OnDestroy {
           saldoDisponivel: produto?.saldo ?? 0,
           quantidade: 1
         });
+
+        if (produto && produto.saldo > 0) {
+          this.form.controls.quantidade.setValidators([
+            Validators.required,
+            Validators.min(0.001),
+            Validators.max(produto.saldo)
+          ]);
+        } else {
+          this.form.controls.quantidade.setValidators([
+            Validators.required,
+            Validators.min(0.001)
+          ]);
+        }
+        this.form.controls.quantidade.updateValueAndValidity();
       });
   }
 
@@ -113,17 +127,27 @@ export class FaturamentoCriarComponent implements OnInit, OnDestroy {
   }
 
   adicionarItem(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
-
     const { codigoProduto, quantidade } = this.form.getRawValue();
     const produto = this.produtoSelecionado();
 
-    if (!produto) return;
+    if (!produto) {
+      this.notification.aviso('Selecione um produto antes de adicionar.', 'Atenção');
+      return;
+    }
 
-    this.erroAcao.set('');
+    if (quantidade <= 0) {
+      this.notification.aviso('Informe uma quantidade maior que zero.', 'Quantidade Inválida');
+      return;
+    }
+
+    if (quantidade > produto.saldo) {
+      this.notification.aviso(
+        `Saldo insuficiente! Você informou ${quantidade} unidades, mas há apenas ${produto.saldo} disponíveis no estoque.`,
+        'Estoque Insuficiente'
+      );
+      this.form.controls.quantidade.markAsTouched();
+      return;
+    }
 
     const itensAtuais = this.itensDaNota();
     const itemExistente = itensAtuais.find(i => i.codigoProduto === codigoProduto);
@@ -131,7 +155,10 @@ export class FaturamentoCriarComponent implements OnInit, OnDestroy {
     if (itemExistente) {
       const novaQtd = itemExistente.quantidade + quantidade;
       if (novaQtd > produto.saldo) {
-        this.erroAcao.set(`Quantidade total (${novaQtd}) excede o saldo disponível (${produto.saldo}).`);
+        this.notification.aviso(
+          `Quantidade total (${novaQtd}) ultrapassa o saldo disponível (${produto.saldo}). Já existem ${itemExistente.quantidade} na nota.`,
+          'Estoque Insuficiente'
+        );
         return;
       }
       this.itensDaNota.set(itensAtuais.map(i =>
@@ -139,10 +166,6 @@ export class FaturamentoCriarComponent implements OnInit, OnDestroy {
       ));
       this.notification.sucesso(`Quantidade de "${produto.descricao}" atualizada para ${novaQtd}.`);
     } else {
-      if (quantidade > produto.saldo) {
-        this.erroAcao.set(`Saldo insuficiente. Disponível: ${produto.saldo}`);
-        return;
-      }
       const novoItem: ItemRascunho = {
         codigoProduto: produto.codigo,
         descricaoProduto: produto.descricao,

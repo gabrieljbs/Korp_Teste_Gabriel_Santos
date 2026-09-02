@@ -24,6 +24,10 @@ export class FaturamentoService {
     return this.http.post<NotaFiscal>(`${this.baseUrl}/${numero}/itens`, request);
   }
 
+  removerItem(numero: number, codigoProduto: string): Observable<NotaFiscal> {
+    return this.http.delete<NotaFiscal>(`${this.baseUrl}/${numero}/itens/${encodeURIComponent(codigoProduto)}`);
+  }
+
   fechar(numero: number): Observable<NotaFiscal> {
     return this.http.post<NotaFiscal>(`${this.baseUrl}/${numero}/fechar`, {});
   }

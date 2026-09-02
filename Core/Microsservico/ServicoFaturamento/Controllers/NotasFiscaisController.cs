@@ -97,6 +97,31 @@ public sealed class NotasFiscaisController : ControllerBase
         }
     }
 
+    /// <summary>Remove um item de uma nota fiscal aberta.</summary>
+    [HttpDelete("notas/{numero:long}/itens/{codigoProduto}")]
+    [ProducesResponseType(typeof(NotaFiscalResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<NotaFiscalResponse>> RemoverItem(
+        long numero,
+        string codigoProduto,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var nota = await _faturamentoService.RemoverItemAsync(numero, codigoProduto, cancellationToken);
+            return Ok(NotaFiscalResponse.De(nota));
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new ErroResponse(ex.Message));
+        }
+    }
+
     /// <summary>
     /// Fecha uma nota fiscal.
     /// Para cada item, debita o saldo no Serviço de Estoque via HTTP.

@@ -43,7 +43,7 @@
         <div class="flex gap-3 align-items-end flex-wrap">
           
           <!-- Seleção de Produto -->
-          <div class="flex flex-column gap-1 flex-grow-1" style="min-width: 250px;">
+          <div class="flex flex-column gap-1 flex-grow-1 relative" style="min-width: 250px;">
             <label class="font-semibold text-gray-700">Produto <span class="text-red-500">*</span></label>
             <select
               formControlName="codigoProduto"
@@ -59,17 +59,18 @@
               }
             </select>
             @if (isInvalid('codigoProduto')) {
-              <small class="text-red-500">{{ form.get('codigoProduto')?.errors | formError }}</small>
+              <small class="text-red-500 absolute font-medium" style="bottom: -18px; left: 0; font-size: 0.75rem; white-space: nowrap;">
+                {{ form.get('codigoProduto')?.errors | formError }}
+              </small>
             }
           </div>
 
           <!-- Quantidade -->
-          <div class="flex flex-column gap-1" style="width: 170px;">
+          <div class="flex flex-column gap-1 relative" style="width: 170px;">
             <label class="font-semibold text-gray-700">Quantidade <span class="text-red-500">*</span></label>
             <p-inputnumber
               formControlName="quantidade"
               [min]="0.001"
-              [max]="produtoSelecionado()?.saldo ?? 999999"
               [minFractionDigits]="0"
               [maxFractionDigits]="3"
               locale="pt-BR"
@@ -80,7 +81,9 @@
               [class.ng-dirty]="isInvalid('quantidade')">
             </p-inputnumber>
             @if (isInvalid('quantidade')) {
-              <small class="text-red-500">{{ form.get('quantidade')?.errors | formError }}</small>
+              <small class="text-red-500 absolute font-medium" style="bottom: -18px; left: 0; font-size: 0.75rem; white-space: nowrap;">
+                {{ form.get('quantidade')?.errors | formError }}
+              </small>
             }
           </div>
 

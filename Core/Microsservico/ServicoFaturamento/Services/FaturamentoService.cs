@@ -51,6 +51,17 @@ public sealed class FaturamentoService
         return ConverterParaDto(nota);
     }
 
+    public async Task<NotaFiscalDto> RemoverItemAsync(
+        long numero,
+        string codigoProduto,
+        CancellationToken cancellationToken = default)
+    {
+        var nota = await ObterEntidadeAsync(numero, cancellationToken);
+        nota.RemoverItem(codigoProduto);
+        await _repositorio.SalvarAsync(cancellationToken);
+        return ConverterParaDto(nota);
+    }
+
     public async Task<NotaFiscalDto> FecharNotaFiscalAsync(
         long numero,
         CancellationToken cancellationToken = default)

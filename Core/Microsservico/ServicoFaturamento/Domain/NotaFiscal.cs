@@ -34,6 +34,19 @@ public sealed class NotaFiscal
         }
     }
 
+    public void RemoverItem(string codigoProduto)
+    {
+        ValidarAberta();
+
+        var item = _itens.FirstOrDefault(i =>
+            i.CodigoProduto.Equals(codigoProduto, StringComparison.OrdinalIgnoreCase));
+
+        if (item is not null)
+        {
+            _itens.Remove(item);
+        }
+    }
+
     public void Fechar()
     {
         ValidarAberta();

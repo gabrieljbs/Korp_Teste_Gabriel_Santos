@@ -22,11 +22,13 @@ import { TimeoutError } from 'rxjs';
 import { NotificationService } from '../../../core/services/notification.service';
 import { FormErrorPipe } from '../../../core/pipes/form-error.pipe';
 
+import { TooltipModule } from 'primeng/tooltip';
+
 @Component({
   selector: 'app-faturamento-detalhes',
   imports: [
     ReactiveFormsModule, RouterLink, CommonModule, DecimalPipe,
-    TableModule, ButtonModule, TagModule, InputNumber, CardModule, MessageModule, FormErrorPipe
+    TableModule, ButtonModule, TagModule, InputNumber, CardModule, MessageModule, FormErrorPipe, TooltipModule
   ],
   templateUrl: './faturamento-detalhes.html'
 })
@@ -69,6 +71,25 @@ export class FaturamentoDetalhesComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.numero = Number(this.route.snapshot.paramMap.get('numero'));
     this.carregarDados();
+
+    this.formItem.controls.codigoProduto.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(codigo => {
+        const produto = this.produtosDisponiveis().find(p => p.codigo === codigo);
+        if (produto && produto.saldo > 0) {
+          this.formItem.controls.quantidade.setValidators([
+            Validators.required,
+            Validators.min(0.001),
+            Validators.max(produto.saldo)
+          ]);
+        } else {
+          this.formItem.controls.quantidade.setValidators([
+            Validators.required,
+            Validators.min(0.001)
+          ]);
+        }
+        this.formItem.controls.quantidade.updateValueAndValidity();
+      });
   }
 
   ngOnDestroy(): void {
@@ -165,6 +186,29 @@ export class FaturamentoDetalhesComponent implements OnInit, OnDestroy {
           const msg = err.error?.mensagem ?? err.error?.message ?? 'Erro ao adicionar item.';
           this.erroAcao.set(msg);
           this.notification.erro(msg, 'Erro');
+        }
+      });
+  }
+
+  removendoItem = signal(false);
+
+  removerItem(codigoProduto: string): void {
+    const notaAtual = this.nota();
+    if (!notaAtual || notaAtual.status !== 'Aberta') return;
+
+    this.removendoItem.set(true);
+    this.faturamentoService.removerItem(this.numero, codigoProduto)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (notaAtualizada: NotaFiscal) => {
+          this.nota.set(notaAtualizada);
+          this.removendoItem.set(false);
+          this.notification.sucesso('Item removido da nota fiscal com sucesso.');
+        },
+        error: (err: HttpErrorResponse) => {
+          this.removendoItem.set(false);
+          const msg = err.error?.mensagem ?? err.error?.message ?? 'Não foi possível remover o item.';
+          this.notification.erro(msg, 'Erro ao Remover');
         }
       });
   }

@@ -64,7 +64,7 @@
         <!-- Linha 1: Produto, Quantidade, Itens na Nota, Botão Adicionar -->
         <div class="flex gap-3 align-items-end flex-wrap">
           <!-- Produto -->
-          <div class="flex flex-column gap-1 flex-grow-1" style="min-width: 250px">
+          <div class="flex flex-column gap-1 flex-grow-1 relative" style="min-width: 250px">
             <label class="font-semibold text-gray-700"
               >Produto <span class="text-red-500">*</span></label
             >
@@ -83,21 +83,20 @@
               }
             </select>
             @if (isInvalid('codigoProduto')) {
-              <small class="text-red-500">{{
-                formItem.get('codigoProduto')?.errors | formError
-              }}</small>
+              <small class="text-red-500 absolute font-medium" style="bottom: -18px; left: 0; font-size: 0.75rem; white-space: nowrap;">
+                {{ formItem.get('codigoProduto')?.errors | formError }}
+              </small>
             }
           </div>
 
           <!-- Quantidade -->
-          <div class="flex flex-column gap-1" style="width: 170px">
+          <div class="flex flex-column gap-1 relative" style="width: 170px">
             <label class="font-semibold text-gray-700"
               >Quantidade <span class="text-red-500">*</span></label
             >
             <p-inputnumber
               formControlName="quantidade"
               [min]="0.001"
-              [max]="produtoSelecionado()?.saldo ?? 999999"
               [minFractionDigits]="0"
               [maxFractionDigits]="3"
               locale="pt-BR"
@@ -109,9 +108,9 @@
             >
             </p-inputnumber>
             @if (isInvalid('quantidade')) {
-              <small class="text-red-500">{{
-                formItem.get('quantidade')?.errors | formError
-              }}</small>
+              <small class="text-red-500 absolute font-medium" style="bottom: -18px; left: 0; font-size: 0.75rem; white-space: nowrap;">
+                {{ formItem.get('quantidade')?.errors | formError }}
+              </small>
             }
           </div>
 
@@ -182,7 +181,10 @@
           <tr>
             <th>Código</th>
             <th>Descrição</th>
-            <th class="text-right">Quantidade</th>
+            <th class="text-right" style="width: 200px">Quantidade</th>
+            @if (nota()!.status === 'Aberta') {
+              <th class="text-right" style="width: 120px">Ações</th>
+            }
           </tr>
         </ng-template>
         <ng-template #body let-item>
@@ -190,6 +192,18 @@
             <td class="font-bold font-mono">{{ item.codigoProduto }}</td>
             <td>{{ item.descricaoProduto }}</td>
             <td class="text-right font-bold">{{ item.quantidade | number: '1.0-3' }}</td>
+            @if (nota()!.status === 'Aberta') {
+              <td class="text-right">
+                <p-button
+                  icon="pi pi-trash"
+                  severity="danger"
+                  size="small"
+                  [disabled]="removendoItem()"
+                  (onClick)="removerItem(item.codigoProduto)"
+                  pTooltip="Remover item">
+                </p-button>
+              </td>
+            }
           </tr>
         </ng-template>
       </p-table>
